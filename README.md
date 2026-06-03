@@ -1,2 +1,56 @@
-# vibecoding-process-analysis
-Analysis of the Effects of Vibe Coding Based on Software Engineering Processes
+# ⚡ FlashAI
+
+텍스트를 붙여넣으면 AI가 자동으로 Q&A 플래시카드를 생성해주는 웹 앱입니다.
+
+## 📌 프로젝트 개요
+
+| 항목 | 내용 |
+|------|------|
+| 과제 | 프로세스에 입각한 바이브코딩 효과 분석 |
+| SW | FlashAI — AI 기반 플래시카드 생성기 |
+| 사용 AI | Claude (Anthropic) |
+| 팀원 | 나샤론 | 신주영
+
+## 🗂️ 버전 히스토리
+
+| 버전 | 설명 | 비고 |
+|------|------|------|
+| v1.0 | 프로토타입 — 프로세스 미적용 바이브코딩 | 빠른 구현 |
+| v2.0 | 프로세스 적용 버전 (예정) | 요구사항 분석 ~ 품질관리 적용 |
+
+## ✅ 기능 (v1.0)
+
+- 텍스트 붙여넣기 → AI가 Q&A 카드 자동 생성
+- 카드 클릭 시 앞/뒤 뒤집기
+- 전체 뒤집기 / 초기화
+- 토큰 사용량 실시간 표시
+
+## 🚀 실행 방법
+
+별도 설치 없이 `index.html` 파일을 브라우저에서 열면 바로 실행됩니다.
+
+## 📁 파일 구조
+
+```
+/
+├── index.html   # 메인 앱 (HTML + CSS + JS 단일 파일)
+└── README.md    # 프로젝트 설명
+```
+
+## 🔧 사용 기술
+
+- HTML / CSS / JavaScript (단일 파일)
+- Claude API (`claude-sonnet-4-20250514`)
+
+## 📋 프로세스 적용 현황
+
+- [x] 아이디어 선정 (GitHub Discussions)
+- [x] 요구사항 정의 (Must / Should / Could)
+- [ ] 설계 문서 작성
+- [ ] 테스트 케이스 작성
+- [ ] 코드 리뷰
+- [ ] 품질 관리
+
+## 💬 토의 기록
+
+GitHub Discussions에서 확인하세요 → [Discussions 바로가기](../../discussions)
