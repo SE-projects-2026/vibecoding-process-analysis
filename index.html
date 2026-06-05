@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashAI v2.0</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8f8f6; color: #1a1a1a; min-height: 100vh; padding: 2rem 1rem;
+    }
+    .container { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
+    .version-tag {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      background: #1a1a1a; color: #fff; padding: 2px 8px; border-radius: 6px;
+      margin-left: 8px; vertical-align: middle;
+    }
+    .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+
+    #apiScreen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 60vh; gap: 1rem;
+    }
+    .api-box {
+      background: #fff; border: 1px solid #e0e0e0; border-radius: 14px;
+      padding: 2rem; width: 100%; max-width: 440px; text-align: center;
+    }
+    .api-box h2 { font-size: 20px; margin-bottom: 8px; }
+    .api-box p { font-size: 13px; color: #888; margin-bottom: 1.2rem; line-height: 1.6; }
+    .api-input-row { display: flex; gap: 8px; }
+    .api-input-row input {
+      flex: 1; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+      font-size: 13px; font-family: monospace; color: #1a1a1a; background: #fafafa;
+    }
+    .api-input-row input:focus { outline: none; border-color: #888; }
+    .api-warn { font-size: 11px; color: #bbb; margin-top: 10px; }
+    .api-link { color: #4a7fd4; text-decoration: none; }
+
+    #mainApp { display: none; }
+    .api-bar {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 1.2rem;
+      padding: 8px 12px; background: #fff; border: 1px solid #e8e8e8;
+      border-radius: 10px; font-size: 12px; color: #888;
+    }
+    .api-bar span { flex: 1; }
+    .api-bar button {
+      font-size: 11px; padding: 3px 8px; border: 1px solid #ddd;
+      border-radius: 6px; background: transparent; cursor: pointer; color: #666;
+    }
+    .api-bar button:hover { background: #f0f0f0; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+
+    textarea {
+      width: 100%; min-height: 130px; padding: 12px 14px;
+      border: 1px solid #ddd; border-radius: 10px;
+      font-family: inherit; font-size: 14px; color: #1a1a1a;
+      background: #fff; resize: vertical; line-height: 1.6; transition: border-color 0.2s;
+    }
+    textarea:focus { outline: none; border-color: #888; }
+    .char-count { font-size: 11px; color: #aaa; text-align: right; margin-top: 4px; }
+    .char-count.warn { color: #e08a00; }
+    .char-count.error { color: #d44; }
+
+    .options-row {
+      display: flex; gap: 12px; margin-top: 10px; align-items: center; flex-wrap: wrap;
+      padding: 10px 12px; background: #fff; border: 1px solid #eee; border-radius: 10px;
+    }
+    .options-row label { font-size: 12px; color: #666; display: flex; align-items: center; gap: 5px; }
+    .options-row select {
+      font-size: 12px; padding: 3px 6px; border: 1px solid #ddd; border-radius: 6px;
+      background: #fafafa; color: #1a1a1a;
+    }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+    button {
+      padding: 8px 16px; font-size: 14px; font-weight: 500;
+      border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a;
+      cursor: pointer; transition: all 0.15s;
+    }
+    button:hover { background: #f0f0f0; }
+    button:active { transform: scale(0.98); }
+    button.primary { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    button.primary:hover { background: #333; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* 토큰 대시보드 */
+    .token-dash {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 1rem;
+    }
+    .token-card {
+      background: #fff; border: 1px solid #e8e8e8; border-radius: 10px;
+      padding: 12px; text-align: center;
+    }
+    .token-card .label { font-size: 11px; color: #999; margin-bottom: 4px; }
+    .token-card .value { font-size: 20px; font-weight: 700; color: #1a1a1a; }
+    .token-card .unit { font-size: 10px; color: #bbb; }
+    .token-card.cost .value { color: #2a8a4a; }
+
+    .loading {
+      text-align: center; padding: 2.5rem; color: #888; font-size: 14px;
+      background: #fff; border-radius: 12px; border: 1px solid #eee; margin-top: 1rem;
+    }
+    .error-box {
+      text-align: center; padding: 1.5rem; color: #d44; font-size: 13px;
+      border: 1px solid #f0caca; border-radius: 12px; margin-top: 1rem; background: #fff8f8;
+    }
+    .empty {
+      text-align: center; padding: 2.5rem 1rem; color: #999; font-size: 14px;
+      border: 1px dashed #ddd; border-radius: 12px; margin-top: 1rem; background: #fff;
+    }
+    .cards-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin-top: 1rem;
+    }
+    .card-wrapper { perspective: 1000px; height: 165px; cursor: pointer; }
+    .card-inner {
+      width: 100%; height: 100%; position: relative; transform-style: preserve-3d;
+      transition: transform 0.45s cubic-bezier(.4,0,.2,1);
+    }
+    .card-inner.flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute; width: 100%; height: 100%;
+      backface-visibility: hidden; -webkit-backface-visibility: hidden;
+      border: 1px solid #e8e8e8; border-radius: 12px; padding: 16px;
+      display: flex; flex-direction: column; justify-content: space-between; background: #fff;
+    }
+    .card-face.back { transform: rotateY(180deg); background: #f5f5f3; }
+    .card-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: #999; text-transform: uppercase; }
+    .card-text {
+      font-size: 13px; color: #1a1a1a; line-height: 1.55; flex: 1; margin-top: 8px;
+      overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+    }
+    .card-hint { font-size: 11px; color: #bbb; text-align: right; }
+    .section-title { font-size: 14px; font-weight: 600; color: #555; margin: 1.5rem 0 0.5rem; }
+    .nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 8px; }
+    .nav-info { font-size: 13px; color: #888; }
+
+    /* 이력 로그 테이블 */
+    .log-table {
+      width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 12px;
+      background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #eee;
+    }
+    .log-table th {
+      background: #f5f5f3; padding: 8px 10px; text-align: left; color: #777; font-weight: 600;
+      border-bottom: 1px solid #eee;
+    }
+    .log-table td { padding: 8px 10px; border-bottom: 1px solid #f2f2f2; color: #444; }
+    .log-table tr:last-child td { border-bottom: none; }
+    .log-table .ok { color: #2a8a4a; }
+    .log-table .fail { color: #d44; }
+    .log-empty { font-size: 12px; color: #bbb; text-align: center; padding: 1rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- API KEY 입력 -->
+  <div id="apiScreen">
+    <div class="api-box">
+      <h2>⚡ FlashAI <span class="version-tag">v2.0</span></h2>
+      <p>시작하려면 Anthropic API 키를 입력해주세요.<br>키는 브라우저에만 저장되며 외부로 전송되지 않아요.</p>
+      <div class="api-input-row">
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-..." />
+        <button class="primary" onclick="startApp()">시작</button>
+      </div>
+      <p class="api-warn">🔑 키 발급 → <a class="api-link" href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+    </div>
+  </div>
+
+  <!-- 메인 앱 -->
+  <div id="mainApp">
+    <div class="api-bar">
+      <div class="dot"></div>
+      <span>Claude API 연결됨 (claude-sonnet-4)</span>
+      <button onclick="resetKey()">키 변경</button>
+    </div>
+
+    <h1>⚡ FlashAI <span class="version-tag">v2.0</span></h1>
+    <p class="subtitle">텍스트를 붙여넣으면 AI가 자동으로 Q&A 플래시카드를 만들어줘요 · 프로세스 적용 버전</p>
+
+    <textarea id="inputText" oninput="updateCharCount()" placeholder="학습할 내용을 여기에 붙여넣으세요... (최소 20자)
+
+예시: 광합성은 식물이 빛 에너지를 이용해 이산화탄소와 물로부터 포도당을 합성하는 과정이다. 엽록소가 빛을 흡수하며, 산소가 부산물로 생성된다."></textarea>
+    <div class="char-count" id="charCount">0자</div>
+
+    <div class="options-row">
+      <label>카드 개수
+        <select id="cardNum">
+          <option value="3">3개</option>
+          <option value="5" selected>5개</option>
+          <option value="7">7개</option>
+          <option value="10">10개</option>
+        </select>
+      </label>
+      <label>난이도
+        <select id="difficulty">
+          <option value="기초">기초</option>
+          <option value="보통" selected>보통</option>
+          <option value="심화">심화</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="btn-row">
+      <button class="primary" id="generateBtn" onclick="generateCards()">카드 생성하기</button>
+      <button onclick="clearAll()">초기화</button>
+    </div>
+
+    <!-- 토큰 대시보드 -->
+    <div class="token-dash">
+      <div class="token-card">
+        <div class="label">입력 토큰</div>
+        <div class="value" id="inTok">0</div>
+        <div class="unit">input</div>
+      </div>
+      <div class="token-card">
+        <div class="label">출력 토큰</div>
+        <div class="value" id="outTok">0</div>
+        <div class="unit">output</div>
+      </div>
+      <div class="token-card">
+        <div class="label">누적 토큰</div>
+        <div class="value" id="totTok">0</div>
+        <div class="unit">total</div>
+      </div>
+      <div class="token-card cost">
+        <div class="label">예상 비용</div>
+        <div class="value" id="cost">$0.00</div>
+        <div class="unit">USD</div>
+      </div>
+    </div>
+
+    <div id="cardsArea">
+      <div class="empty">
+        카드를 생성하면 여기에 나타납니다<br>
+        <span style="font-size:12px; margin-top:6px; display:block;">카드를 클릭하면 뒤집혀요 👆</span>
+      </div>
+    </div>
+
+    <div id="navRow" class="nav-row" style="display:none;">
+      <button onclick="flipAll()">전체 뒤집기</button>
+      <span class="nav-info" id="navInfo"></span>
+      <button onclick="resetFlip()">처음으로</button>
+    </div>
+
+    <!-- 생성 이력 로그 -->
+    <div class="section-title">📊 생성 이력 로그 <span style="font-weight:400;color:#aaa;font-size:12px;">(프로세스 증빙용)</span></div>
+    <table class="log-table" id="logTable">
+      <thead>
+        <tr>
+          <th>#</th><th>시각</th><th>입력자수</th><th>카드</th>
+          <th>입력T</th><th>출력T</th><th>합계T</th><th>상태</th>
+        </tr>
+      </thead>
+      <tbody id="logBody">
+        <tr><td colspan="8" class="log-empty">아직 생성 이력이 없습니다</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+let cards = [];
+let cumInput = 0, cumOutput = 0;
+let apiKey = '';
+let attemptNo = 0;
+let logs = [];
+
+// Claude Sonnet 4 가격 (per million tokens): input $3, output $15
+const PRICE_IN = 3 / 1000000;
+const PRICE_OUT = 15 / 1000000;
+
+function startApp() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-ant-')) {
+    alert('올바른 Anthropic API 키를 입력해주세요 (sk-ant-... 형식)');
+    return;
+  }
+  apiKey = key;
+  document.getElementById('apiScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+}
+
+function resetKey() {
+  apiKey = '';
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('apiScreen').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startApp();
+});
+
+// 입력 검증 - 글자 수 카운트
+function updateCharCount() {
+  const len = document.getElementById('inputText').value.trim().length;
+  const el = document.getElementById('charCount');
+  el.textContent = len + '자';
+  el.className = 'char-count';
+  if (len > 0 && len < 20) { el.className = 'char-count error'; el.textContent = len + '자 (최소 20자 필요)'; }
+  else if (len > 3000) { el.className = 'char-count warn'; el.textContent = len + '자 (너무 길어요, 3000자 권장)'; }
+}
+
+async function generateCards() {
+  const text = document.getElementById('inputText').value.trim();
+
+  // 입력 검증 (프로세스 적용: 요구사항 분석에서 도출된 엣지케이스)
+  if (!text) { alert('텍스트를 입력해주세요'); return; }
+  if (text.length < 20) { alert('최소 20자 이상 입력해주세요'); return; }
+  if (text.length > 5000) { alert('5000자를 초과했습니다. 줄여주세요'); return; }
+
+  const numCards = document.getElementById('cardNum').value;
+  const difficulty = document.getElementById('difficulty').value;
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = '생성 중...';
+  document.getElementById('cardsArea').innerHTML = '<div class="loading">AI가 카드를 만들고 있어요... ✨</div>';
+  document.getElementById('navRow').style.display = 'none';
+
+  attemptNo++;
+  const startTime = new Date();
+
+  const prompt = `다음 텍스트를 읽고 ${difficulty} 난이도의 Q&A 플래시카드를 정확히 ${numCards}개 만들어줘. 반드시 아래 JSON 배열 형식만 반환하고 다른 텍스트나 마크다운은 절대 쓰지 마.
+[{"q":"질문","a":"답변"}]
+
+텍스트:
+${text}`;
+
+  // 프로세스 적용: 최대 2회 재시도 (품질 관리)
+  let success = false;
+  let lastError = '';
+  let inT = 0, outT = 0;
+
+  for (let retry = 0; retry < 2 && !success; retry++) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1500,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        lastError = data.error.message;
+        continue;
+      }
+
+      const usage = data.usage || {};
+      inT = usage.input_tokens || 0;
+      outT = usage.output_tokens || 0;
+
+      const raw = data.content?.[0]?.text || '[]';
+      const clean = raw.replace(/```json|```/g, '').trim();
+      const match = clean.match(/\[[\s\S]*\]/);
+      const parsed = JSON.parse(match ? match[0] : clean);
+
+      if (Array.isArray(parsed) && parsed.length && parsed[0].q) {
+        cards = parsed;
+        success = true;
+      } else {
+        lastError = 'JSON 파싱 실패 (형식 오류)';
+      }
+    } catch(e) {
+      lastError = e.message || '네트워크 오류';
+    }
+  }
+
+  // 토큰 누적 업데이트
+  cumInput += inT;
+  cumOutput += outT;
+  updateTokenDash(inT, outT);
+
+  // 이력 로그 기록 (프로세스 증빙)
+  logs.push({
+    no: attemptNo,
+    time: startTime.toLocaleTimeString('ko-KR'),
+    chars: text.length,
+    cards: success ? cards.length : 0,
+    inT, outT,
+    status: success ? 'OK' : 'FAIL'
+  });
+  renderLog();
+
+  if (success) {
+    document.getElementById('navInfo').textContent = `총 ${cards.length}장`;
+    renderCards();
+  } else {
+    document.getElementById('cardsArea').innerHTML =
+      `<div class="error-box">⚠️ 생성 실패 (2회 재시도)<br><span style="font-size:11px;color:#999;">${lastError}</span></div>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '카드 생성하기';
+}
+
+function updateTokenDash(inT, outT) {
+  document.getElementById('inTok').textContent = inT.toLocaleString();
+  document.getElementById('outTok').textContent = outT.toLocaleString();
+  document.getElementById('totTok').textContent = (cumInput + cumOutput).toLocaleString();
+  const cost = cumInput * PRICE_IN + cumOutput * PRICE_OUT;
+  document.getElementById('cost').textContent = '$' + cost.toFixed(4);
+}
+
+function renderLog() {
+  const body = document.getElementById('logBody');
+  if (!logs.length) {
+    body.innerHTML = '<tr><td colspan="8" class="log-empty">아직 생성 이력이 없습니다</td></tr>';
+    return;
+  }
+  body.innerHTML = logs.map(l => `
+    <tr>
+      <td>${l.no}</td><td>${l.time}</td><td>${l.chars}</td><td>${l.cards}</td>
+      <td>${l.inT.toLocaleString()}</td><td>${l.outT.toLocaleString()}</td>
+      <td>${(l.inT + l.outT).toLocaleString()}</td>
+      <td class="${l.status === 'OK' ? 'ok' : 'fail'}">${l.status}</td>
+    </tr>`).join('');
+}
+
+function renderCards() {
+  if (!cards.length) return;
+  const grid = document.createElement('div');
+  grid.className = 'cards-grid';
+  cards.forEach((c) => {
+    const div = document.createElement('div');
+    div.className = 'card-wrapper';
+    div.onclick = function() { this.querySelector('.card-inner').classList.toggle('flipped'); };
+    div.innerHTML = `
+      <div class="card-inner">
+        <div class="card-face front">
+          <div><div class="card-label">Q</div><div class="card-text">${c.q}</div></div>
+          <div class="card-hint">탭하여 답 보기</div>
+        </div>
+        <div class="card-face back">
+          <div><div class="card-label">A</div><div class="card-text">${c.a}</div></div>
+          <div class="card-hint">탭하여 질문 보기</div>
+        </div>
+      </div>`;
+    grid.appendChild(div);
+  });
+  document.getElementById('cardsArea').innerHTML = '';
+  document.getElementById('cardsArea').appendChild(grid);
+  document.getElementById('navRow').style.display = 'flex';
+}
+
+function flipAll() {
+  const all = document.querySelectorAll('.card-inner');
+  const allFlipped = [...all].every(c => c.classList.contains('flipped'));
+  all.forEach(c => allFlipped ? c.classList.remove('flipped') : c.classList.add('flipped'));
+}
+
+function resetFlip() {
+  document.querySelectorAll('.card-inner').forEach(c => c.classList.remove('flipped'));
+}
+
+function clearAll() {
+  cards = [];
+  document.getElementById('inputText').value = '';
+  document.getElementById('charCount').textContent = '0자';
+  document.getElementById('charCount').className = 'char-count';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('cardsArea').innerHTML = '<div class="empty">카드를 생성하면 여기에 나타납니다<br><span style="font-size:12px;margin-top:6px;display:block;">카드를 클릭하면 뒤집혀요 👆</span></div>';
+}
+</script>
+</body>
+</html>
